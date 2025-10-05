@@ -4,3 +4,4 @@ resources
 app/service/__pycache__/
 app/__pycache__
 app/data_load/__pycache__/
+__pycache__/
