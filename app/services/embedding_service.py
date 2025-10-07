@@ -1,7 +1,7 @@
 import logging
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_milvus import Milvus
-from app.service.service_interface import GenericEmbedder
+from app.services.service_interface import GenericEmbedder
 from app.data_load.data_access_objects import PdfDAO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 

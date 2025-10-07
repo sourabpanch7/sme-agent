@@ -1,5 +1,5 @@
 import logging
-from app.service.embedding_service import PdfEmbeder
+from app.services.embedding_service import PdfEmbeder
 
 
 class DataEmbedding(PdfEmbeder):

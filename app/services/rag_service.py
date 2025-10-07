@@ -1,5 +1,5 @@
 import logging
-from app.service.service_interface import GenericRAG
+from app.services.service_interface import GenericRAG
 
 
 class IpRAG(GenericRAG):

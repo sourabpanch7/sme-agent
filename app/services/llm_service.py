@@ -4,7 +4,7 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
-from app.service.service_interface import GenericLLM
+from app.services.service_interface import GenericLLM
 
 
 class IpExpertLLM(GenericLLM):
