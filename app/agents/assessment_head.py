@@ -1,8 +1,8 @@
-from ..services.qwen_client import QWENClient
+from app.services.llm_service import IpExpertLLM
 
 class AssessmentHead:
     def __init__(self):
-        self.llm = QWENClient()
+        self.llm = IpExpertLLM()
 
     def assess(self, quiz_id: str, answers: dict):
         # Load quiz from storage (omitted here), then grade
