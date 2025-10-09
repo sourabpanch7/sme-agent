@@ -1,5 +1,7 @@
 import logging
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from app.services.embedding_service import VectorStore
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
 from fastapi import FastAPI
@@ -7,16 +9,23 @@ from fastapi import FastAPI
 app = FastAPI()
 
 
-class InteractIpExpert(IpRAG, IpExpertLLM):
-    def __init__(self, partition_key, search_key):
+class InteractIpExpert(IpRAG, IpExpertLLM, VectorStore):
+    def __init__(self, partition_key, search_key, milvus_uri, target_collection,
+                 embedding_model="Qwen/Qwen3-Embedding-8B"):
         super().__init__()
         self.partition_key = partition_key
         self.search_key = search_key
+        self.embedding_model = embedding_model
+        self.embedding = HuggingFaceEmbeddings(model_name=embedding_model)
+        self.milvus_uri = milvus_uri
+        self.target_collection = target_collection
         self.vectorstore = None
         self.rag_obj = None
         self.llm_obj = None
 
     def create_chat_info(self):
+        self.get_vector_store(milvus_uri=self.milvus_uri, target_collection=self.target_collection,
+                              partition_key=self.partition_key)
         self.rag_obj = IpRAG(retriever=self.vectorstore)
         self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
                                             search_key=self.search_key, top_k=5)

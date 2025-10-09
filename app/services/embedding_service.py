@@ -27,13 +27,23 @@ class PdfEmbeder(GenericEmbedder, PdfDAO):
         self.embedding = HuggingFaceEmbeddings(model_name=kwargs["model"])
         logging.info("Created Embedding")
         logging.info(self.status)
+        return self.embedding
 
     def chunk(self):
         self.splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
         self.texts = self.splitter.split_documents(self.docs)
+        return self.texts
 
-    def create_vector_store(self, **kwargs):
-        self.chunk()
+
+class VectorStore:
+
+    def __init__(self,texts,embedding):
+        self.texts = texts
+        self.embedding = embedding
+        self.vectorstore = None
+
+    def insert_into_vector_store(self, **kwargs):
+
         self.vectorstore = Milvus.from_documents(
             self.texts,
             self.embedding,
@@ -43,4 +53,12 @@ class PdfEmbeder(GenericEmbedder, PdfDAO):
             partition_key_field=kwargs["partition_key"]
         )
         logging.info("Embeddings written to Vector Store")
-        logging.info(self.status)
+
+    def get_vector_store(self,**kwargs):
+
+        self.vectorstore = Milvus(
+            self.embedding,
+            connection_args={"uri": kwargs["milvus_uri"]},
+            collection_name=kwargs["target_collection"],
+            partition_key_field=kwargs["partition_key"]
+        )

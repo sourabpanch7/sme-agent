@@ -1,8 +1,8 @@
 import logging
-from app.services.embedding_service import PdfEmbeder
+from app.services.embedding_service import PdfEmbeder, VectorStore
 
 
-class DataEmbedding(PdfEmbeder):
+class DataEmbedding(PdfEmbeder, VectorStore):
     def __init__(self, pdf_path, milvus_uri, target_collection, embedding_model="Qwen/Qwen3-Embedding-8B",
                  search_key=None, partition_key=None):
         super().__init__()
@@ -15,12 +15,14 @@ class DataEmbedding(PdfEmbeder):
         self.embedding_model = embedding_model
         self.embedding_obj = None
 
-    def load_vector_data(self):
+    def  insert_vector_data(self):
         self.embedding_obj = PdfEmbeder(chunk_size=2500, chunk_overlap=1400)
         self.embedding_obj.read_docs(pdf_path=self.pdf_path)
         self.create_embeddings(model=self.embedding_model)
-        self.create_vector_store(milvus_uri=self.milvus_uri, target_collection=self.milvus_collection,
-                                 partition_key=self.partition_key)
+        self.chunk()
+        self.insert_into_vector_store(milvus_uri=self.milvus_uri,
+                                      target_collection=self.milvus_collection,
+                                      partition_key=self.partition_key)
 
 
 if __name__ == "__main__":
@@ -31,7 +33,7 @@ if __name__ == "__main__":
             milvus_uri="../milvus_db.db",
             target_collection="ip_test"
         )
-        data_load_obj.load_vector_data()
+        data_load_obj.insert_vector_data()
     except Exception as err_msg:
         logging.error(err_msg)
         raise err_msg
