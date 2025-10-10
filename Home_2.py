@@ -36,16 +36,19 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
 
     def chat(self, query):
         rsp = self.llm_obj.invoke_llm(query=query)
-        try:
-            rsp = rsp.split("Answer:", 1)[1]
-
-        except IndexError:
-            pass
-        rsp = rsp.strip()
-        rsp = rsp.split(".")[0]
-        logging.info(rsp)
+        # print(rsp)
+        # try:
+        #     rsp = rsp.split("Answer:", 1)[1]
+        #
+        # except IndexError:
+        #     pass
+        # rsp = rsp.strip()
+        # rsp = rsp.split(".")[0]
+        # logging.info(rsp)
         self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
-        return {"IP_expert_response": rsp}
+        resp_dict = {"IP_expert_response": rsp}
+        print(resp_dict)
+        return resp_dict
 
 
 # items_db = {}
@@ -82,7 +85,7 @@ if __name__ == "__main__":
         chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
                                     target_collection="ip_test", partition_key=None, search_key=None)
         chat_obj.create_chat_info()
-        op = chat_obj.chat(query="What's AI?")
+        op = chat_obj.chat(query="What's an Ordinary Patent Application?")
         logging.info(op)
     except Exception as err_msg:
         logging.error(err_msg)

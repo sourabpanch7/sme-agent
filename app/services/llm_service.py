@@ -24,8 +24,22 @@ class IpExpertLLM(GenericLLM):
         self.compressor = None
         self.query = None
         self.compression_retriever = None
-        self.examples = [{"question": ""
-                             , "answer": ""}]
+        self.examples = [{"question": "What information does an applicant need to provide?"
+                             , "answer": """An applicant is required to disclose the name, address and "
+                                         nationality of the true and first inventor(s)"""},
+                         {"question": "Who can be an 'assignee'?"
+                             , "answer": """"Assignee" can be a natural person or legal person such as, a
+registered company, small entity, startup, research organization, an
+educational institute or the Government. Assignee includes assignee of an assignee also."""},
+                         {"question": "What are the types of patent applications?"
+                             , "answer": """1) Ordinary Application
+                             2) Convention Application
+                             3) PCT National Phase Application.
+                             4) Divisional Application
+                             5) Patent of Addition
+                             """}
+
+                         ]
         self.example_prompt = ChatPromptTemplate.from_messages([
             ("human", "{question}"),
             ("ai", "{answer}")
@@ -36,13 +50,35 @@ class IpExpertLLM(GenericLLM):
             examples=self.examples
         )
         self.prompt = ChatPromptTemplate.from_messages([("system", """
-        Question:
-        Thought:
-        Action:
-        Action Input:
-        Observation:
-        Thought:
-        Answer:
+        You are IP Expert, an AI Intellectual Property Laws Professor. You will be interacting with the user in a
+        friendly manner and help them answer their Intellectual Property Laws queries.
+        Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
+        If you don't know the answer, just say that you don't know, don't try to make up an answer.
+        Do NOT make up information which you are unable to find in the context enclosed in <context> tags.
+        If the question seems abstract and doesn't seem to specific, don't answer the question.
+        You are supposed to answer only Intellectual Property Laws related queries. If user asks any question not related to Intellectual
+        Property Laws, just say that you can't answer questions which are unrelated to Intellectual Property Laws, don't try to make up 
+        an answer.
+        Use the following format:
+        Question:the input question you must answer
+        Thought: you should always think about what to do
+        Action: the action to take,should be based on the information available in the context enclosed in <context> 
+        tags.
+        Action Input: the input to the action
+        Observation: the result of the action
+        Thought: I now know the final answer
+        Answer: the final answer to the original input question
+            <context>
+            {context}
+            </context>
+            
+            <question>
+            {question}
+            </question>
+        
+        The response should be friendly and well informed. Think through and provide a reasoning behind your thought.
+        Think through on your reasoning before providing the response.
+        
         Assistant:
         """), ("placeholder", "{chat_history}"), self.few_shot_prompt, ("human", "{question}")
                                                         ])
@@ -53,7 +89,13 @@ class IpExpertLLM(GenericLLM):
         self.history_chain = None
 
         self.contextualize_system_prompt = """
-        Given a chat history...
+        Given a chat history and the latest user question
+        which might reference context in the chat history,
+        formulate a standalone question which can be understood
+        without the chat history. Think through and try and find the context of the question from the chat history.
+        Finding context of the question from the chat history as priority.
+        Do NOT answer the question,
+        just reformulate it if needed and otherwise return it as is.
         """
 
         self.history_aware_retriever = None
