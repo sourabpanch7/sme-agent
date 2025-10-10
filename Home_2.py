@@ -1,10 +1,12 @@
 import logging
+import warnings
 from langchain_core.messages import AIMessage, HumanMessage
 from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
 from dotenv import load_dotenv
 
+warnings.filterwarnings("ignore")
 load_dotenv()
 
 
@@ -42,12 +44,11 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
         #
         # except IndexError:
         #     pass
-        # rsp = rsp.strip()
-        # rsp = rsp.split(".")[0]
+        rsp = rsp.strip()
+        rsp = rsp.replace("\n", "")
         # logging.info(rsp)
         self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
         resp_dict = {"IP_expert_response": rsp}
-        print(resp_dict)
         return resp_dict
 
 
@@ -81,6 +82,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
 #
 #
 if __name__ == "__main__":
+    logging.getLogger().setLevel(level=logging.INFO)
     try:
         chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
                                     target_collection="ip_test", partition_key=None, search_key=None)
