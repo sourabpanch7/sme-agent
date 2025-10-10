@@ -1,9 +1,16 @@
 import logging
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+import os
+from dotenv import load_dotenv
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_milvus import Milvus
 from app.services.service_interface import GenericEmbedder
 from app.data_load.data_access_objects import PdfDAO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+load_dotenv()
+
+
+# api_key =
 
 
 class PdfEmbeder(GenericEmbedder, PdfDAO):
@@ -19,34 +26,32 @@ class PdfEmbeder(GenericEmbedder, PdfDAO):
 
     def read_docs(self, **kwargs):
         self.docs = PdfDAO.read_data(self=self, pdf_path=kwargs["pdf_path"])
-
         logging.info("Created Documents")
         logging.info(self.status)
+        return self.docs
 
     def create_embeddings(self, **kwargs):
-        self.embedding = HuggingFaceEmbeddings(model_name=kwargs["model"])
-        logging.info("Created Embedding")
-        logging.info(self.status)
+        self.embedding = GoogleGenerativeAIEmbeddings(model=kwargs["model"], google_api_key=os.getenv('GEMINI_API_KEY'))
         return self.embedding
 
-    def chunk(self):
-        self.splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap)
-        self.texts = self.splitter.split_documents(self.docs)
+    def chunk(self, docs):
+        self.splitter = RecursiveCharacterTextSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap,
+                                                       length_function=len,
+                                                       separators=["\n\n", "\n", " ", ""],
+                                                       add_start_index=True)
+        self.texts = self.splitter.split_documents(docs)
         return self.texts
 
 
 class VectorStore:
 
-    def __init__(self,texts,embedding):
-        self.texts = texts
-        self.embedding = embedding
+    def __init__(self):
         self.vectorstore = None
 
     def insert_into_vector_store(self, **kwargs):
-
         self.vectorstore = Milvus.from_documents(
-            self.texts,
-            self.embedding,
+            kwargs["texts"],
+            kwargs["embedding"],
             connection_args={"uri": kwargs["milvus_uri"]},
             collection_name=kwargs["target_collection"],
             drop_old=True,
@@ -54,10 +59,9 @@ class VectorStore:
         )
         logging.info("Embeddings written to Vector Store")
 
-    def get_vector_store(self,**kwargs):
-
+    def get_vector_store(self, **kwargs):
         self.vectorstore = Milvus(
-            self.embedding,
+            kwargs["embedding"],
             connection_args={"uri": kwargs["milvus_uri"]},
             collection_name=kwargs["target_collection"],
             partition_key_field=kwargs["partition_key"]

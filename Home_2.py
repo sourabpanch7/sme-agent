@@ -1,22 +1,24 @@
 import logging
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from app.services.embedding_service import VectorStore
+from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
-from fastapi import FastAPI
+from dotenv import load_dotenv
 
-app = FastAPI()
+load_dotenv()
 
 
-class InteractIpExpert(IpRAG, IpExpertLLM, VectorStore):
+# from fastapi import FastAPI
+# app = FastAPI()
+
+
+class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
     def __init__(self, partition_key, search_key, milvus_uri, target_collection,
-                 embedding_model="Qwen/Qwen3-Embedding-8B"):
+                 embedding_model="models/text-embedding-004"):
         super().__init__()
         self.partition_key = partition_key
         self.search_key = search_key
         self.embedding_model = embedding_model
-        self.embedding = HuggingFaceEmbeddings(model_name=embedding_model)
         self.milvus_uri = milvus_uri
         self.target_collection = target_collection
         self.vectorstore = None
@@ -24,12 +26,13 @@ class InteractIpExpert(IpRAG, IpExpertLLM, VectorStore):
         self.llm_obj = None
 
     def create_chat_info(self):
-        self.get_vector_store(milvus_uri=self.milvus_uri, target_collection=self.target_collection,
+        embedding = self.create_embeddings(model=self.embedding_model)
+        self.get_vector_store(embedding=embedding, milvus_uri=self.milvus_uri, target_collection=self.target_collection,
                               partition_key=self.partition_key)
         self.rag_obj = IpRAG(retriever=self.vectorstore)
         self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
                                             search_key=self.search_key, top_k=5)
-        self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="")
+        self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="gemini-2.5-flash")
 
     def chat(self, query):
         rsp = self.llm_obj.invoke_llm(query=query)
@@ -45,43 +48,44 @@ class InteractIpExpert(IpRAG, IpExpertLLM, VectorStore):
         return {"IP_expert_response": rsp}
 
 
-items_db = {}
-item_id_counter = 0
-
-
-@app.get("/items/")
-async def read_all_items():
-    """
-    Retrieves all items in the database.
-    """
-    return items_db
-
-
-@app.post("/items/")
-async def create_item(item_data):
-    global item_id_counter
-    item_id_counter += 1
-    items_db[item_id_counter] = item_data
-    return {"message": "Item created successfully", "item_id": item_id_counter, "item": item_data}
-
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: int):
-    if item_id in items_db:
-        return items_db[item_id]
-    else:
-        return {"message": "Item not found"}
+# items_db = {}
+# item_id_counter = 0
+#
+#
+# @app.get("/items/")
+# async def read_all_items():
+#     """
+#     Retrieves all items in the database.
+#     """
+#     return items_db
+#
+#
+# @app.post("/items/")
+# async def create_item(item_data):
+#     global item_id_counter
+#     item_id_counter += 1
+#     items_db[item_id_counter] = item_data
+#     return {"message": "Item created successfully", "item_id": item_id_counter, "item": item_data}
+#
+#
+# @app.get("/items/{item_id}")
+# async def read_item(item_id: int):
+#     if item_id in items_db:
+#         return items_db[item_id]
+#     else:
+#         return {"message": "Item not found"}
 
 #
 #
-# if __name__ == "__main__":
-#     try:
-#         chat_obj = InteractIpExpert(milvus_uri="", collection="", partition_key="", search_key="")
-#         chat_obj.create_chat_info()
-#         op = chat_obj.chat(query="")
-#         logging.info(op)
-#     except Exception as err_msg:
-#         logging.error(err_msg)
-#         raise err_msg
-#     finally:
-#         logging.info("DONE")
+if __name__ == "__main__":
+    try:
+        chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
+                                    target_collection="ip_test", partition_key=None, search_key=None)
+        chat_obj.create_chat_info()
+        op = chat_obj.chat(query="What's AI?")
+        logging.info(op)
+    except Exception as err_msg:
+        logging.error(err_msg)
+        raise err_msg
+    finally:
+        logging.info("DONE")

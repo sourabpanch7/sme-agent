@@ -1,12 +1,13 @@
 import logging
+
 from app.services.embedding_service import PdfEmbeder, VectorStore
 
 
 class DataEmbedding(PdfEmbeder, VectorStore):
-    def __init__(self, pdf_path, milvus_uri, target_collection, embedding_model="Qwen/Qwen3-Embedding-8B",
+    def __init__(self, pdf_path, milvus_uri, target_collection, embedding_model="models/text-embedding-004",
                  search_key=None, partition_key=None):
         super().__init__()
-        logging.info("Starting IP expert Interaction")
+        logging.info("Starting Embedding creation")
         self.pdf_path = pdf_path
         self.milvus_uri = milvus_uri
         self.milvus_collection = target_collection
@@ -15,12 +16,12 @@ class DataEmbedding(PdfEmbeder, VectorStore):
         self.embedding_model = embedding_model
         self.embedding_obj = None
 
-    def  insert_vector_data(self):
+    def insert_vector_data(self):
         self.embedding_obj = PdfEmbeder(chunk_size=2500, chunk_overlap=1400)
-        self.embedding_obj.read_docs(pdf_path=self.pdf_path)
-        self.create_embeddings(model=self.embedding_model)
-        self.chunk()
-        self.insert_into_vector_store(milvus_uri=self.milvus_uri,
+        docs = self.embedding_obj.read_docs(pdf_path=self.pdf_path)
+        texts = self.chunk(docs)
+        embedding = self.create_embeddings(model=self.embedding_model, texts=texts)
+        self.insert_into_vector_store(texts=texts, embedding=embedding, milvus_uri=self.milvus_uri,
                                       target_collection=self.milvus_collection,
                                       partition_key=self.partition_key)
 
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     try:
         data_load_obj = DataEmbedding(
             pdf_path="/Users/sourabpanchanan/PycharmProjects/SME_Agent/resources/Manual_for_Patent_Office_Practice_and_Procedure_.pdf",
-            milvus_uri="../milvus_db.db",
+            milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
             target_collection="ip_test"
         )
         data_load_obj.insert_vector_data()

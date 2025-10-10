@@ -1,16 +1,26 @@
+import os
+from dotenv import load_dotenv
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.prompts import MessagesPlaceholder
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from app.services.service_interface import GenericLLM
+
+load_dotenv()
 
 
 class IpExpertLLM(GenericLLM):
     def __init__(self, retriever, model, temperature=0):
         super().__init__(model=model, temperature=temperature, retriever=retriever)
-        self.llm = model
+        self.llm = ChatGoogleGenerativeAI(
+            model=model,  # Or another Gemma-based Gemini model like "gemma-3-27b-it"
+            reasoning_effort="none",
+            google_api_key=os.getenv('GEMINI_API_KEY')
+
+        )
         self.compressor = None
         self.query = None
         self.compression_retriever = None

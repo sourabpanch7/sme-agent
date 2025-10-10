@@ -6,3 +6,7 @@ app/__pycache__
 app/data_load/__pycache__/
 __pycache__/
 Architecture.md
+rough.py
+.env
+milvus_db.db
+=1.7.0
