@@ -114,6 +114,7 @@ educational institute or the Government. Assignee includes assignee of an assign
     def build_rag_chain(self):
         self.compression_retriever = ContextualCompressionRetriever(base_compressor=self.compressor,
                                                                     base_retriever=self.retriever)
+        self.build_history_aware_rag_chain()
         self.rag_chain = (
                 RunnablePassthrough.assign(
                     context=self.contextualized_question | self.compression_retriever | self.format_docs)
