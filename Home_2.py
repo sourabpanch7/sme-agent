@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
-from app.services.agent_service import IpAgent
+from app.services.agent_service import IpQuizAgent
 from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore")
@@ -37,7 +37,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore,IpAgent):
         self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
                                             search_key=self.search_key, top_k=5)
         # self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="gemini-2.0-flash")
-        self.agent = IpAgent(retriever=self.rag_obj.relevant_doc,model="gemini-2.0-flash")
+        self.agent = IpQuizAgent(retriever=self.rag_obj.relevant_doc,model="gemini-2.0-flash")
 
     def chat(self, query):
         rsp = self.agent.invoke_agent(query=query)

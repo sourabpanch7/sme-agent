@@ -6,7 +6,7 @@ from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
 
 
-class IpAgent:
+class IpQuizAgent:
     def __init__(self, retriever, model):
         self.retriever = retriever
         self.llm = ChatGoogleGenerativeAI(
