@@ -50,7 +50,7 @@ educational institute or the Government. Assignee includes assignee of an assign
             examples=self.examples
         )
         self.prompt = ChatPromptTemplate.from_messages([("system", """
-        You are IP Expert, an AI Intellectual Property Laws Professor. You will be interacting with the user in a
+        You are IP Expert, an AI Intellectual Property Laws Teaching assistant. You will be interacting with the user in a
         friendly manner and help them answer their Intellectual Property Laws queries.
         Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
         If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -103,7 +103,7 @@ educational institute or the Government. Assignee includes assignee of an assign
 
     @staticmethod
     def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+        return "".join(doc.page_content for doc in docs)
 
     def contextualized_question(self, ip: dict):
         if ip.get("chat_history"):

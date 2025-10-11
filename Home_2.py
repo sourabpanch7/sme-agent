@@ -4,6 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
+from app.services.agent_service import IpAgent
 from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore")
@@ -14,7 +15,7 @@ load_dotenv()
 # app = FastAPI()
 
 
-class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
+class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore,IpAgent):
     def __init__(self, partition_key, search_key, milvus_uri, target_collection,
                  embedding_model="models/text-embedding-004"):
         super().__init__()
@@ -25,7 +26,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
         self.target_collection = target_collection
         self.vectorstore = None
         self.rag_obj = None
-        self.llm_obj = None
+        self.agent = None
 
     def create_chat_info(self):
         embedding = self.create_embeddings(model=self.embedding_model)
@@ -34,10 +35,11 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
         self.rag_obj = IpRAG(retriever=self.vectorstore)
         self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
                                             search_key=self.search_key, top_k=5)
-        self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="gemini-2.5-flash")
+        # self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="gemini-2.5-flash")
+        self.agent = IpAgent(retriever=self.rag_obj.relevant_doc,model="gemini-2.0-flash")
 
     def chat(self, query):
-        rsp = self.llm_obj.invoke_llm(query=query)
+        rsp = self.agent.invoke_agent(query=query)
         # print(rsp)
         # try:
         #     rsp = rsp.split("Answer:", 1)[1]
@@ -47,7 +49,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
         rsp = rsp.strip()
         rsp = rsp.replace("\n", "")
         # logging.info(rsp)
-        self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
+        # self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
         resp_dict = {"IP_expert_response": rsp}
         return resp_dict
 
