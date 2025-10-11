@@ -16,7 +16,12 @@ class IpAgent:
 
         )
         self.prompt = PromptTemplate.from_template("""
-        Answer the following questions as best you can. You have access to the following tools:
+        You are an AI assistant designed to create quizzes from documents.
+        When a user asks for a quiz on a specific topic, you should:
+        1. Use the 'document_retriever' tool to find relevant information in the vector database.
+        2. Use the 'generate_quiz' tool to create quiz questions from the retrieved content.
+        3. Present the quiz to the user. 
+        You have access to the following tools:
 
         {tools}
         
@@ -38,13 +43,26 @@ class IpAgent:
         """)
         self.retrieval_tool = None
         self.agent_executor = None
+        self.generate_quiz_tool = None
         self.tools = []
 
-    def create_retrieval_tool(self):
+    def generate_quiz(self, docs):
+        # Logic to prompt LLM with document_content to generate quiz questions
+        llm = self.llm  # or your preferred LLM
+        prompt = f"Generate 2 multiple-choice quiz questions from the following text:\n\n{docs}"
+        quiz = llm.invoke(prompt)
+        return quiz.content
+
+    def create_tools(self):
         self.retrieval_tool = Tool(
             name="document_retriever",
             func=self.retriever.invoke,
             description="Useful for retrieving information from the document store."
+        )
+        self.generate_quiz_tool = Tool(
+            name="generate_quiz",
+            func=self.generate_quiz,
+            description="Useful for generating quiz questions from provided document content."
         )
 
         self.tools.append(self.retrieval_tool)
@@ -55,7 +73,7 @@ class IpAgent:
                                                                  handle_parsing_errors=True)
 
     def invoke_agent(self, query):
-        self.create_retrieval_tool()
+        self.create_tools()
         self.create_agent()
         response = self.agent_executor.invoke({"input": query})
         return response["output"]
