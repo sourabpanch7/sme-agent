@@ -11,7 +11,7 @@
    ```bash
    uvicorn Home:app --reload 
    ```
-3. Run RAG chat interface
+3.Run RAG chat interface
 ```bash
     streamlit run Home_2.py
 ```
