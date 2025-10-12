@@ -12,9 +12,9 @@
    uvicorn Home:app --reload 
    ```
 3.Run RAG chat interface
-```bash
+    ```bash
     streamlit run Home_2.py
-```
+    ```
 
 ## Local Host Swagger
     http://localhost:8000/docs
