@@ -10,3 +10,4 @@ rough.py
 .env
 milvus_db.db
 =1.7.0
+outputs
