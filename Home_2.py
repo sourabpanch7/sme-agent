@@ -50,7 +50,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore, IpQuizAgent)
             pass
         rsp = rsp.strip()
         rsp = rsp.replace("\n", "")
-        logging.info(rsp)
+        # logging.info(rsp)
         self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
         resp_dict = {"IP_expert_response": rsp}
         return resp_dict
