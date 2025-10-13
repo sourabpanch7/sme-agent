@@ -37,7 +37,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
         return rsp
 
 
-if __name__ == "__main_":
+if __name__ == "__main__":
     logging.getLogger().setLevel(level=logging.INFO)
     try:
         chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
