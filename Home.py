@@ -1,7 +1,5 @@
 import logging
 import warnings
-import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
 from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.agent_service import IpQuizAgent
@@ -39,50 +37,18 @@ class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
         return rsp
 
 
-# st.set_page_config(
-#     layout="wide",
-#     page_title="Indian Intellectual Property Laws Tutor - Home",
-#     initial_sidebar_state="collapsed"
-# )
+if __name__ == "__main_":
+    logging.getLogger().setLevel(level=logging.INFO)
+    try:
+        chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
+                                    target_collection="ip_test", partition_key=None, search_key=None)
+        chat_obj.create_chat_info()
+        op = chat_obj.chat(query="Generate quiz on Indian IP Laws")
+        print(op)
 
-chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
-                            target_collection="ip_test", partition_key=None, search_key=None)
-chat_obj.create_chat_info()
-op = chat_obj.chat(query="Generate quiz on Indian IP Laws")
-print(op)
+    except Exception as err_msg:
+        logging.error(str(err_msg))
+        raise err_msg
 
-# st.header("""Intellectual Property Tutor:
-# Gen-AI powered Tutor for Indian Intellectual Property Laws Tutor""")
-#
-# if "messages" not in st.session_state:
-#     st.session_state.messages = [{"role": "assistant", "content": """
-#     Hello !! I am your tutor for Indian Intellectual Property Laws. Hope you are doing good today!!
-#     """}
-#         , {"role": "assistant", "content": """
-#     Let's try to talk about one topic at a time.
-#     If you want to talk about something new, just say bye, we can restart our conversation"""}
-#         , {"role": "assistant", "content": """
-#     Whenever you want to stop our conversation, just say bye!"""}]
-#
-# for message in st.session_state.messages:
-#     with st.chat_message(message["role"]):
-#         st.markdown(message["content"])
-#
-# if user_question := st.chat_input("What do you want to lear about today?"):
-#     st.session_state.messages.append({"role": "user", "content": user_question})
-#     with st.chat_message("user"):
-#         st.markdown(user_question)
-#
-#     with st.chat_message("assistant"):
-#         if "bye" in user_question.lower():
-#             st.write_stream(["Bye! have a great day ahead!!"])
-#             st.session_state.clear()
-#
-#         else:
-#             try:
-#                 op = chat_obj.chat(query=user_question)
-#                 response = st.write_stream([op.get("IP_expert_response", "Sorry,I'm unable to answer that right now.")])
-#             except Exception:
-#                 response = st.write_stream(["Unable to answer right now. Please try after some time."])
-#
-#             st.session_state.messages.append({"role": "assistant", "content": response})
+    finally:
+        logging.info("DONE")
