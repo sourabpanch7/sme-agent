@@ -44,7 +44,7 @@ if __name__ == "__main__":
                                     target_collection="ip_test", partition_key=None, search_key=None)
         chat_obj.create_chat_info()
         op = chat_obj.chat(query="Generate quiz on Indian IP Laws")
-        print(op)
+        # print(op)
 
     except Exception as err_msg:
         logging.error(str(err_msg))

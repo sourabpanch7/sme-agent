@@ -1,9 +1,13 @@
 import os
+import json
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import Tool
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
+from fpdf import FPDF
+
+load_dotenv()
 
 
 class IpQuizAgent:
@@ -20,7 +24,8 @@ class IpQuizAgent:
         When a user asks for a quiz on a specific topic, you should:
         1. Use the 'document_retriever' tool to find relevant information in the vector database.
         2. Use the 'generate_quiz' tool to create quiz questions from the retrieved content.
-        3. Present the quiz to the user. 
+        3. Use 'create_pdf' to create PDF of the generated questions and store them in a file.
+        4. Present the quiz to the user.
         You have access to the following tools:
 
         {tools}
@@ -32,7 +37,7 @@ class IpQuizAgent:
         Action: the action to take, should be one of [{tool_names}]
         Action Input: the input to the action
         Observation: the result of the action
-        ... (this Thought/Action/Action Input/Observation can repeat 5 times)
+        ... (this Thought/Action/Action Input/Observation can repeat 3 times)
         Thought: I now know the final answer
         Final Answer: the final answer to the original input question
 
@@ -44,12 +49,30 @@ class IpQuizAgent:
         self.retrieval_tool = None
         self.agent_executor = None
         self.generate_quiz_tool = None
+        self.write_as_pdf_tool = None
         self.tools = []
 
-    def generate_quiz(self, docs):
-        # Logic to prompt LLM with document_content to generate quiz questions
+    def write_to_pdf(self, text_content,
+                     output_filename="/Users/sourabpanchanan/PycharmProjects/SME_Agent/outputs/quiz.pdf"):
+        """
+           Tool that can be used by the LLM to PDF from the  input text_content.
+        """
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+        # Split the text into lines and add each line to the PDF
+        for line in text_content.split('\n\n'):
+            pdf.cell(0, 10, txt=line, ln=True)  # 0 for full width, 10 for line height, ln=True for new line
+
+        pdf.output(output_filename)
+        print(f"PDF '{output_filename}' created successfully.")
+
+    def generate_quiz(self, docs, num_questions=2):
+        """
+           Tool that can be used by the LLM to generate quiz questions with input document_content.
+        """
         llm = self.llm  # or your preferred LLM
-        prompt = f"Generate 2 multiple-choice quiz questions from the following text:\n\n{docs}"
+        prompt = f"Generate {num_questions} distinct multiple-choice quiz questions from the following text:\n\n{docs}"
         quiz = llm.invoke(prompt)
         return quiz.content
 
@@ -62,10 +85,15 @@ class IpQuizAgent:
         self.generate_quiz_tool = Tool(
             name="generate_quiz",
             func=self.generate_quiz,
+            description="Useful for generating multiple-choice quiz questions from provided document content."
+        )
+        self.write_as_pdf_tool = Tool(
+            name="create_pdf",
+            func=self.write_to_pdf,
             description="Useful for generating quiz questions from provided document content."
         )
 
-        self.tools.append(self.retrieval_tool)
+        self.tools.extend([self.retrieval_tool, self.generate_quiz_tool, self.write_as_pdf_tool])
 
     def create_agent(self):
         agent = create_react_agent(self.llm, self.tools, self.prompt)
