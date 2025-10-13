@@ -27,8 +27,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore, IpQuizAgent)
         self.target_collection = target_collection
         self.vectorstore = None
         self.rag_obj = None
-        # self.llm_obj=None
-        self.agent = None
+        self.llm_obj = None
 
     def create_chat_info(self):
         embedding = self.create_embeddings(model=self.embedding_model)
@@ -38,10 +37,8 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore, IpQuizAgent)
         self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
                                             search_key=self.search_key, top_k=5)
         self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="gemini-2.0-flash")
-        # self.agent = IpQuizAgent(retriever=self.rag_obj.relevant_doc,model="gemini-2.0-flash")
 
     def chat(self, query):
-        # rsp = self.agent.invoke_agent(query=query)
         rsp = self.llm_obj.invoke_llm(query=query)
         try:
             rsp = rsp.split("Answer:", 1)[1]
@@ -50,7 +47,6 @@ class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore, IpQuizAgent)
             pass
         rsp = rsp.strip()
         rsp = rsp.replace("\n", "")
-        # logging.info(rsp)
         self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
         resp_dict = {"IP_expert_response": rsp}
         return resp_dict

@@ -11,8 +11,6 @@ warnings.filterwarnings("ignore")
 load_dotenv()
 
 
-
-
 class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
     def __init__(self, partition_key, search_key, milvus_uri, target_collection,
                  embedding_model="models/text-embedding-004"):
@@ -38,10 +36,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
     def chat(self, query):
         rsp = self.agent.invoke_agent(query=query)
         rsp = rsp.strip()
-        rsp = rsp.replace("\n", "")
-        logging.info(rsp)
-        resp_dict = {"quiz_agent_response": rsp}
-        return resp_dict
+        return rsp
 
 
 # st.set_page_config(
@@ -54,7 +49,7 @@ chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/S
                             target_collection="ip_test", partition_key=None, search_key=None)
 chat_obj.create_chat_info()
 op = chat_obj.chat(query="Generate quiz on Indian IP Laws")
-logging.info(op)
+print(op)
 
 # st.header("""Intellectual Property Tutor:
 # Gen-AI powered Tutor for Indian Intellectual Property Laws Tutor""")
