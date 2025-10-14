@@ -31,7 +31,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
                                             search_key=self.search_key, top_k=5)
         self.agent = IpQuizAgent(retriever=self.rag_obj.relevant_doc, model="gemini-2.0-flash")
 
-    def chat(self, query):
+    def create_quiz(self, query):
         rsp = self.agent.invoke_agent(query=query)
         rsp = rsp.strip()
         return rsp
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
                                     target_collection="ip_test", partition_key=None, search_key=None)
         chat_obj.create_chat_info()
-        op = chat_obj.chat(query="Generate quiz on Indian IP Laws")
+        op = chat_obj.create_quiz(query="Generate quiz on Indian IP Laws")
         # print(op)
 
     except Exception as err_msg:

@@ -6,8 +6,15 @@ from langchain.tools import Tool
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
 from fpdf import FPDF
+from pydantic import BaseModel, Field
+from langchain_core.output_parsers import JsonOutputParser
 
 load_dotenv()
+
+
+class Quiz(BaseModel):
+    Questions: str = Field(description="Multiple-choice Quiz questions")
+    Answer_Key: str = Field(description="Answer Key for generated questions")
 
 
 class IpQuizAgent:
@@ -52,29 +59,42 @@ class IpQuizAgent:
         self.write_as_pdf_tool = None
         self.tools = []
 
-    def write_to_pdf(self, text_content,
+    @staticmethod
+    def write_to_pdf(text_content,
                      output_filename="/Users/sourabpanchanan/PycharmProjects/SME_Agent/outputs/quiz.pdf"):
         """
            Tool that can be used by the LLM to PDF from the  input text_content.
         """
+        text_content = text_content.replace("'", '"').replace('\n', '\\n')
+        text_content = json.loads(text_content)
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
         # Split the text into lines and add each line to the PDF
-        for line in text_content.split('\n\n'):
-            pdf.cell(0, 10, txt=line, ln=True)  # 0 for full width, 10 for line height, ln=True for new line
+        for key, value in text_content.items():
+            pdf.cell(0, 10, txt=key, ln=True)
+            for line in value.split('\n'):
+                pdf.cell(0, 10, txt=line, ln=True)  # 0 for full width, 10 for line height, ln=True for new line
 
         pdf.output(output_filename)
-        print(f"PDF '{output_filename}' created successfully.")
 
     def generate_quiz(self, docs, num_questions=2):
         """
            Tool that can be used by the LLM to generate quiz questions with input document_content.
         """
-        llm = self.llm  # or your preferred LLM
-        prompt = f"Generate {num_questions} distinct multiple-choice quiz questions from the following text:\n\n{docs}"
-        quiz = llm.invoke(prompt)
-        return quiz.content
+        llm = self.llm
+        parser = JsonOutputParser(pydantic_object=Quiz)
+        prompt = PromptTemplate(template="""Generate {num_questions} distinct multiple-choice quiz questions 
+            from the text and return it as JSON object.\n{format_instructions}\n.\n{docs}\n
+            """,
+                                input_variables=["docs", "num_questions"],
+                                partial_variables={"format_instructions": parser.get_format_instructions()},
+                                )
+
+        chain = prompt | llm | parser
+
+        quiz = chain.invoke({"docs": docs, "num_questions": num_questions})
+        return quiz
 
     def create_tools(self):
         self.retrieval_tool = Tool(

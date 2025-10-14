@@ -15,6 +15,10 @@
     ```bash
     streamlit run Home_2.py
     ```
+4.Run quiz generator
+    ```bash
+    python Home.py
+    ```
 
 ## Local Host Swagger
     http://localhost:8000/docs

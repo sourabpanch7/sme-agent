@@ -41,6 +41,7 @@ FlashRank==0.2.10
 Flask==3.1.2
 flatbuffers==25.9.23
 fonttools==4.59.1
+fpdf==1.7.2
 frozenlist==1.7.0
 fsspec==2025.3.0
 gitdb==4.0.12
