@@ -84,8 +84,11 @@ class IpQuizAgent:
         """
         llm = self.llm
         parser = JsonOutputParser(pydantic_object=Quiz)
-        prompt = PromptTemplate(template="""Generate {num_questions} distinct multiple-choice quiz questions 
-            from the text and return it as JSON object.\n{format_instructions}\n.\n{docs}\n
+        prompt = PromptTemplate(template="""Generate {num_questions} distinct multiple-choice quiz questions on Indian 
+        Intellectual Property Laws from the docs and return it as JSON object.\n{format_instructions}\n.\n{docs}\n.
+        Do NOT make up questions that you can't make form the provided docs.
+        Do NOT make up information that you can't find in the provided docs.
+        If you are unable to make questions from the provided docs, just make Questions = NA and the Answer_Key = NA.
             """,
                                 input_variables=["docs", "num_questions"],
                                 partial_variables={"format_instructions": parser.get_format_instructions()},
