@@ -22,7 +22,7 @@ class InteractIpExpert(PdfEmbeder, IpRAG, VectorStore, IpQuizAgent):
         self.rag_obj = None
         self.agent = None
 
-    def create_chat_info(self):
+    def create_quiz_info(self):
         embedding = self.create_embeddings(model=self.embedding_model)
         self.get_vector_store(embedding=embedding, milvus_uri=self.milvus_uri, target_collection=self.target_collection,
                               partition_key=self.partition_key)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     try:
         chat_obj = InteractIpExpert(milvus_uri="/Users/sourabpanchanan/PycharmProjects/SME_Agent/milvus_db.db",
                                     target_collection="ip_test", partition_key=None, search_key=None)
-        chat_obj.create_chat_info()
+        chat_obj.create_quiz_info()
         op = chat_obj.create_quiz(query="Generate quiz on Indian IP Laws")
         # print(op)
 
