@@ -40,3 +40,17 @@ class GenericLLM:
     def invoke_llm(self, query):
         self.query = query
         return self.rag_chain.invoke(self.query)
+
+
+class GenericAgent:
+    def __init__(self):
+        self.status = True
+
+    def create_tools(self):
+        return self.status
+
+    def create_agent(self):
+        return self.status
+
+    def invoke_agent(self, query):
+        return self.status

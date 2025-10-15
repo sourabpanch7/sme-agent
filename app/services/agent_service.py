@@ -1,24 +1,21 @@
 import os
 import json
+from fpdf import FPDF
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import Tool
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
-from fpdf import FPDF
-from pydantic import BaseModel, Field
 from langchain_core.output_parsers import JsonOutputParser
+from app.models.base import Quiz
+from app.services.service_interface import GenericAgent
 
 load_dotenv()
 
 
-class Quiz(BaseModel):
-    Questions: str = Field(description="Multiple-choice Quiz questions")
-    Answer_Key: str = Field(description="Answer Key for generated questions")
-
-
-class IpQuizAgent:
+class IpQuizAgent(GenericAgent):
     def __init__(self, retriever, model):
+        super().__init__()
         self.retriever = retriever
         self.llm = ChatGoogleGenerativeAI(
             model=model,  # Or another Gemma-based Gemini model like "gemma-3-27b-it"

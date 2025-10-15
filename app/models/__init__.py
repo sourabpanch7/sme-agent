@@ -1,2 +1,2 @@
 from .base import Base
-from .user import UserSession
+from .base import UserSession
