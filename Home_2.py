@@ -5,7 +5,6 @@ from langchain_core.messages import AIMessage, HumanMessage
 from app.services.embedding_service import VectorStore, PdfEmbeder
 from app.services.rag_service import IpRAG
 from app.services.llm_service import IpExpertLLM
-from app.services.agent_service import IpQuizAgent
 from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore")
@@ -16,7 +15,7 @@ load_dotenv()
 # app = FastAPI()
 
 
-class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore, IpQuizAgent):
+class InteractIpExpert(PdfEmbeder, IpRAG, IpExpertLLM, VectorStore):
     def __init__(self, partition_key, search_key, milvus_uri, target_collection,
                  embedding_model="models/text-embedding-004"):
         super().__init__()
