@@ -25,3 +25,11 @@ class PdfDAO(GenericDAO):
         return pages
 
 
+class TxtDAO(GenericDAO):
+    def __init__(self):
+        super().__init__()
+
+    def read_data(self, **kwargs):
+        with open(kwargs['text_file_path'], 'r') as fl:
+            for line in fl:
+                yield line

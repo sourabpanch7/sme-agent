@@ -1,7 +1,13 @@
 .idea
 resources
 .DS_Store
-app/service/__pycache__/
+app/services/__pycache__/
 app/__pycache__
 app/data_load/__pycache__/
 __pycache__/
+Architecture.md
+rough.py
+.env
+milvus_db.db
+=1.7.0
+outputs

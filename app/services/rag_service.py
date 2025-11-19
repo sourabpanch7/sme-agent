@@ -1,5 +1,5 @@
 import logging
-from app.service.service_interface import GenericRAG
+from app.services.service_interface import GenericRAG
 
 
 class IpRAG(GenericRAG):
@@ -9,10 +9,7 @@ class IpRAG(GenericRAG):
         self.compression_retriever = None
 
     def get_retrieved_document(self, **kwargs):
-        self.relevant_doc = self.retriever.as_retriever(
+        return self.retriever.as_retriever(
             search_type="similarity",
             k=kwargs.get("top_k", 10),
-            filter={"a": "b"}
         )
-
-        logging.info(self.relevant_doc)

@@ -1,78 +1,78 @@
+import warnings
+import uuid
 import logging
+import streamlit as st
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage
-from app.service.rag_service import IpRAG
-from app.service.llm_service import IpExpertLLM
-from fastapi import FastAPI
+from app.services.llm_service import LLM
+from app.services.embedding_service import Embedding
+from app.services.agentic_workflow_service import IPAgenticWorkflow
 
-app = FastAPI()
+logging.getLogger().setLevel(level=logging.INFO)
 
+warnings.filterwarnings("ignore")
+load_dotenv()
 
-class InteractIpExpert(IpRAG, IpExpertLLM):
-    def __init__(self, partition_key, search_key):
-        super().__init__()
-        self.partition_key = partition_key
-        self.search_key = search_key
-        self.vectorstore = None
-        self.rag_obj = None
-        self.llm_obj = None
+llm_obj = LLM(model_name="gemini-2.5-flash")
+embedding_obj = Embedding()
+flow_obj = IPAgenticWorkflow(llm=llm_obj.get_llm(),
+                             embedding=embedding_obj.create_embeddings(embedding_model="models/text-embedding-004"))
+flow = flow_obj.compile_workflow()
 
-    def create_chat_info(self):
-        self.rag_obj = IpRAG(retriever=self.vectorstore)
-        self.rag_obj.get_retrieved_document(partition_column=self.partition_key,
-                                            search_key=self.search_key, top_k=5)
-        self.llm_obj = IpExpertLLM(retriever=self.rag_obj.relevant_doc, model="")
+my_uuid = uuid.uuid4()
 
-    def chat(self, query):
-        rsp = self.llm_obj.invoke_llm(query=query)
-        try:
-            rsp = rsp.split("Answer:", 1)[1]
+# Convert the UUID object to a string (hexadecimal representation without dashes)
+user_id = f"user_id_{my_uuid.hex}"
+msg_id = 0
 
-        except IndexError:
-            pass
-        rsp = rsp.strip()
-        rsp = rsp.split(".")[0]
-        logging.info(rsp)
-        self.llm_obj.chat_history.extend([HumanMessage(content=query), AIMessage(content=rsp)])
-        return {"IP_expert_response": rsp}
+st.header("""Intellectual Property Tutor:
+Gen-AI powered Tutor for Indian Intellectual Property Laws Tutor""")
 
+if "messages" not in st.session_state:
+    st.session_state.messages = [{"role": "assistant", "content": """
+    Hello !! I am your tutor for Indian Intellectual Property Laws. Hope you are doing good today!!
+    """}
+        , {"role": "assistant", "content": """
+    Let's try to talk about one topic at a time.
+    If you want to talk about something new, just say bye, we can restart our conversation"""}
+        , {"role": "assistant", "content": """
+    Whenever you want to stop our conversation, just say bye!"""}]
 
-items_db = {}
-item_id_counter = 0
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
+if user_question := st.chat_input("What do you want to learn about today?"):
+    st.session_state.messages.append({"role": "user", "content": user_question})
+    with st.chat_message("user"):
+        st.markdown(user_question)
 
-@app.get("/items/")
-async def read_all_items():
-    """
-    Retrieves all items in the database.
-    """
-    return items_db
+    with st.chat_message("assistant"):
+        if "bye" in user_question.lower() or "exit" in user_question.lower() or "quit" in user_question.lower():
+            st.write_stream(["Bye! have a great day ahead!!"])
+            flow_obj.end_langgraph_session()
+            st.session_state.clear()
 
+        else:
+            msg_id += 1
+            message_id = str(msg_id).zfill(4)
 
-@app.post("/items/")
-async def create_item(item_data):
-    global item_id_counter
-    item_id_counter += 1
-    items_db[item_id_counter] = item_data
-    return {"message": "Item created successfully", "item_id": item_id_counter, "item": item_data}
+            try:
+                for event in flow.stream(
+                        {"messages": [
+                            {"role": "user",
+                             "content": user_question}]},
+                        flow_obj.config,
+                        stream_mode="values"
+                ):
+                    response = flow_obj.interact(response=event, user_id=user_id, message_id=message_id)
+                    txt = response["content"][0]["text"]
+                    flow_obj.chat_history.extend(
+                        [HumanMessage(user_question), AIMessage(txt)])
 
+                response = st.write_stream([txt])
+            except Exception as err_msg:
+                logging.error(str(err_msg))
+                response = st.write_stream(["Unable to process request right now. Please try after some time."])
 
-@app.get("/items/{item_id}")
-async def read_item(item_id: int):
-    if item_id in items_db:
-        return items_db[item_id]
-    else:
-        return {"message": "Item not found"}
-
-#
-#
-# if __name__ == "__main__":
-#     try:
-#         chat_obj = InteractIpExpert(milvus_uri="", collection="", partition_key="", search_key="")
-#         chat_obj.create_chat_info()
-#         op = chat_obj.chat(query="")
-#         logging.info(op)
-#     except Exception as err_msg:
-#         logging.error(err_msg)
-#         raise err_msg
-#     finally:
-#         logging.info("DONE")
+            st.session_state.messages.append({"role": "assistant", "content": txt})

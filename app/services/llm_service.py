@@ -1,21 +1,33 @@
+import os
+import warnings
+from dotenv import load_dotenv
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_core.prompts import MessagesPlaceholder
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
-from app.service.service_interface import GenericLLM
+from app.services.service_interface import GenericLLM
+from app.core.constants import RETRIEVER_PROMPT, EXAMPLES, CONTEXTUALIZE_QUESTION_PROMPT
+from app.utils.utility import format_docs
+
+warnings.filterwarnings("ignore")
+load_dotenv()
 
 
 class IpExpertLLM(GenericLLM):
     def __init__(self, retriever, model, temperature=0):
         super().__init__(model=model, temperature=temperature, retriever=retriever)
-        self.llm = model
-        self.compressor = None
+        self.llm = ChatGoogleGenerativeAI(
+            model=model,  # Or another Gemma-based Gemini model like "gemma-3-27b-it"
+            reasoning_effort="none",
+            google_api_key=os.getenv('GEMINI_API_KEY')
+
+        )
         self.query = None
         self.compression_retriever = None
-        self.examples = [{"question": ""
-                             , "answer": ""}]
+        self.examples = EXAMPLES
         self.example_prompt = ChatPromptTemplate.from_messages([
             ("human", "{question}"),
             ("ai", "{answer}")
@@ -25,33 +37,21 @@ class IpExpertLLM(GenericLLM):
             example_prompt=self.example_prompt,
             examples=self.examples
         )
-        self.prompt = ChatPromptTemplate.from_messages([("system", """
-        Question:
-        Thought:
-        Action:
-        Action Input:
-        Observation:
-        Thought:
-        Answer:
-        Assistant:
-        """), ("placeholder", "{chat_history}"), self.few_shot_prompt, ("human", "{question}")
-                                                        ])
+        self.prompt = ChatPromptTemplate.from_messages(
+            [("system", RETRIEVER_PROMPT), ("placeholder", "{chat_history}"), self.few_shot_prompt,
+             ("human", "{question}")
+             ])
         self.prompt.input_variables = ["context", "question"]
         self.compressor = FlashrankRerank()
         self.retriever = retriever
         self.rag_chain = None
         self.history_chain = None
 
-        self.contextualize_system_prompt = """
-        Given a chat history...
-        """
+        self.contextualize_system_prompt = CONTEXTUALIZE_QUESTION_PROMPT
 
         self.history_aware_retriever = None
+        # self.chat_history = ConversationBufferMemory(k=10, return_messages=True)
         self.chat_history = []
-
-    @staticmethod
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
 
     def contextualized_question(self, ip: dict):
         if ip.get("chat_history"):
@@ -62,9 +62,10 @@ class IpExpertLLM(GenericLLM):
     def build_rag_chain(self):
         self.compression_retriever = ContextualCompressionRetriever(base_compressor=self.compressor,
                                                                     base_retriever=self.retriever)
+        self.build_history_aware_rag_chain()
         self.rag_chain = (
                 RunnablePassthrough.assign(
-                    context=self.contextualized_question | self.compression_retriever | self.format_docs)
+                    context=self.contextualized_question | self.compression_retriever | format_docs)
                 | self.prompt
                 | self.llm
                 | StrOutputParser()
@@ -85,3 +86,11 @@ class IpExpertLLM(GenericLLM):
         self.query = query
         self.build_rag_chain()
         return self.rag_chain.invoke({"question": self.query, "chat_history": self.chat_history})
+
+
+class LLM:
+    def __init__(self, model_name):
+        self.llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=os.getenv('GEMINI_API_KEY'))
+
+    def get_llm(self):
+        return self.llm
