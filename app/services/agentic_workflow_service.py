@@ -397,7 +397,11 @@ class IPAgenticWorkflow(GenericAgentWorkflow):
                 msg['Subject'] = subject
 
                 msg.attach(MIMEText(body, 'plain'))
-                filename = "/Users/sourabpanchanan/PycharmProjects/lma-major-project-raggers/outputs/QUIZ.pdf"
+                script_dir = os.path.dirname(__file__)
+                filename = '/'.join(script_dir.split("/")[:-2]) + '/' + "outputs/QUIZ.pdf"
+
+                # Construct the full path using os.path.join for platform independence
+                # filename = os.path.join(script_dir, relative_file_path)
                 attachment = open(filename, "rb")
                 attachment_name = filename.split("/")[-1]
 

@@ -38,13 +38,15 @@ class IpQuizAgent(GenericAgent):
         self.tools = []
 
     @staticmethod
-    def write_to_pdf(text_content,
-                     op_file="/Users/sourabpanchanan/PycharmProjects/lma-major-project-raggers/outputs/QUIZ.pdf"):
+    def write_to_pdf(text_content):
         """
            Tool that can be used by the LLM to generate PDF from the  input text_content.
         """
         print(text_content)
         print(type(text_content))
+
+        script_dir = os.path.dirname(__file__)
+        op_file = '/'.join(script_dir.split("/")[:-2]) + '/' + "outputs/QUIZ.pdf"
         try:
             text_content = ast.literal_eval(text_content)
         except SyntaxError:
