@@ -2,15 +2,12 @@ import logging
 import os
 from dotenv import load_dotenv
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_milvus import Milvus
+from langchain_milvus import Milvus, BM25BuiltInFunction
 from app.services.service_interface import GenericEmbedder
 from app.data_load.data_access_objects import PdfDAO
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 load_dotenv()
-
-
-# api_key =
 
 
 class PdfEmbeder(GenericEmbedder, PdfDAO):
@@ -49,12 +46,23 @@ class VectorStore:
         self.vectorstore = None
 
     def insert_into_vector_store(self, **kwargs):
+        dense_index_param = {
+            "metric_type": "COSINE",
+            "index_type": "IVF_FLAT",
+        }
+        sparse_index_param = {
+            "metric_type": "BM25",
+            "index_type": "SPARSE_INVERTED_INDEX",
+        }
         self.vectorstore = Milvus.from_documents(
-            kwargs["texts"],
-            kwargs["embedding"],
+            documents=kwargs["texts"],
+            embedding=kwargs["embedding"],
+            builtin_function=BM25BuiltInFunction(),
+            vector_field=["dense", "sparse"],
             connection_args={"uri": kwargs["milvus_uri"]},
             collection_name=kwargs["target_collection"],
-            drop_old=True,
+            drop_old=kwargs.get("drop_old", False),
+            index_params=[dense_index_param, sparse_index_param],
             partition_key_field=kwargs["partition_key"]
         )
         logging.info("Embeddings written to Vector Store")
@@ -62,7 +70,18 @@ class VectorStore:
     def get_vector_store(self, **kwargs):
         self.vectorstore = Milvus(
             kwargs["embedding"],
+            builtin_function=BM25BuiltInFunction(),
             connection_args={"uri": kwargs["milvus_uri"]},
             collection_name=kwargs["target_collection"],
-            partition_key_field=kwargs["partition_key"]
+            partition_key_field=kwargs["partition_key"],
+            vector_field=["dense", "sparse"],
         )
+        return self.vectorstore
+
+
+class Embedding(GenericEmbedder):
+    def __init__(self):
+        super().__init__()
+
+    def create_embeddings(self, **kwargs):
+        return GoogleGenerativeAIEmbeddings(model=kwargs["embedding_model"], google_api_key=os.getenv('GEMINI_API_KEY'))

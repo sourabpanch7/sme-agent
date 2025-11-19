@@ -1,4 +1,5 @@
 import os
+import warnings
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -8,7 +9,10 @@ from langchain_core.prompts import MessagesPlaceholder
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from app.services.service_interface import GenericLLM
+from app.core.constants import RETRIEVER_PROMPT, EXAMPLES, CONTEXTUALIZE_QUESTION_PROMPT
+from app.utils.utility import format_docs
 
+warnings.filterwarnings("ignore")
 load_dotenv()
 
 
@@ -21,25 +25,9 @@ class IpExpertLLM(GenericLLM):
             google_api_key=os.getenv('GEMINI_API_KEY')
 
         )
-        self.compressor = None
         self.query = None
         self.compression_retriever = None
-        self.examples = [{"question": "What information does an applicant need to provide?"
-                             , "answer": """An applicant is required to disclose the name, address and "
-                                         nationality of the true and first inventor(s)"""},
-                         {"question": "Who can be an 'assignee'?"
-                             , "answer": """"Assignee" can be a natural person or legal person such as, a
-registered company, small entity, startup, research organization, an
-educational institute or the Government. Assignee includes assignee of an assignee also."""},
-                         {"question": "What are the types of patent applications?"
-                             , "answer": """1) Ordinary Application
-                             2) Convention Application
-                             3) PCT National Phase Application.
-                             4) Divisional Application
-                             5) Patent of Addition
-                             """}
-
-                         ]
+        self.examples = EXAMPLES
         self.example_prompt = ChatPromptTemplate.from_messages([
             ("human", "{question}"),
             ("ai", "{answer}")
@@ -49,61 +37,21 @@ educational institute or the Government. Assignee includes assignee of an assign
             example_prompt=self.example_prompt,
             examples=self.examples
         )
-        self.prompt = ChatPromptTemplate.from_messages([("system", """
-        You are IP Expert, an AI Intellectual Property Laws Teaching assistant. You will be interacting with the user in a
-        friendly manner and help them answer their Intellectual Property Laws queries.
-        Use the following pieces of information to provide a concise answer to the question enclosed in <question> tags.
-        If you don't know the answer, just say that you don't know, don't try to make up an answer.
-        Do NOT make up information which you are unable to find in the context enclosed in <context> tags.
-        If the question seems abstract and doesn't seem to specific, don't answer the question.
-        You are supposed to answer only Intellectual Property Laws related queries. If user asks any question not related to Intellectual
-        Property Laws, just say that you can't answer questions which are unrelated to Intellectual Property Laws, don't try to make up 
-        an answer.
-        Use the following format:
-        Question:the input question you must answer
-        Thought: you should always think about what to do
-        Action: the action to take,should be based on the information available in the context enclosed in <context> 
-        tags.
-        Action Input: the input to the action
-        Observation: the result of the action
-        Thought: I now know the final answer
-        Answer: the final answer to the original input question
-            <context>
-            {context}
-            </context>
-            
-            <question>
-            {question}
-            </question>
-        
-        The response should be friendly and well informed. Think through and provide a reasoning behind your thought.
-        Think through on your reasoning before providing the response.
-        
-        Assistant:
-        """), ("placeholder", "{chat_history}"), self.few_shot_prompt, ("human", "{question}")
-                                                        ])
+        self.prompt = ChatPromptTemplate.from_messages(
+            [("system", RETRIEVER_PROMPT), ("placeholder", "{chat_history}"), self.few_shot_prompt,
+             ("human", "{question}")
+             ])
         self.prompt.input_variables = ["context", "question"]
         self.compressor = FlashrankRerank()
         self.retriever = retriever
         self.rag_chain = None
         self.history_chain = None
 
-        self.contextualize_system_prompt = """
-        Given a chat history and the latest user question
-        which might reference context in the chat history,
-        formulate a standalone question which can be understood
-        without the chat history. Think through and try and find the context of the question from the chat history.
-        Finding context of the question from the chat history as priority.
-        Do NOT answer the question,
-        just reformulate it if needed and otherwise return it as is.
-        """
+        self.contextualize_system_prompt = CONTEXTUALIZE_QUESTION_PROMPT
 
         self.history_aware_retriever = None
+        # self.chat_history = ConversationBufferMemory(k=10, return_messages=True)
         self.chat_history = []
-
-    @staticmethod
-    def format_docs(docs):
-        return "".join(doc.page_content for doc in docs)
 
     def contextualized_question(self, ip: dict):
         if ip.get("chat_history"):
@@ -117,7 +65,7 @@ educational institute or the Government. Assignee includes assignee of an assign
         self.build_history_aware_rag_chain()
         self.rag_chain = (
                 RunnablePassthrough.assign(
-                    context=self.contextualized_question | self.compression_retriever | self.format_docs)
+                    context=self.contextualized_question | self.compression_retriever | format_docs)
                 | self.prompt
                 | self.llm
                 | StrOutputParser()
@@ -138,3 +86,11 @@ educational institute or the Government. Assignee includes assignee of an assign
         self.query = query
         self.build_rag_chain()
         return self.rag_chain.invoke({"question": self.query, "chat_history": self.chat_history})
+
+
+class LLM:
+    def __init__(self, model_name):
+        self.llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=os.getenv('GEMINI_API_KEY'))
+
+    def get_llm(self):
+        return self.llm
