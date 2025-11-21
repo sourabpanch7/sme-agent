@@ -347,7 +347,8 @@ class IPAgenticWorkflow(GenericAgentWorkflow):
     def make_contextual_quiz(self, state):
         logging.info("---STARTING CONTEXTUAL QUIZ GENERATION---")
         question = state["messages"][-1]
-        documents = state["messages"][:-1] + state.get("documents", [])
+        documents = state.get("documents", [])
+        print(documents)
         rsp = self.agent.invoke_agent(query=question.content, documents=documents,
                                       thread_id=self.config.get("thread_id", "1234"))
         rsp = rsp.strip()
