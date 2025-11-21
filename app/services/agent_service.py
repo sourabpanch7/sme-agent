@@ -36,6 +36,8 @@ class IpQuizAgent(GenericAgent):
         self.difficulty_level = None
         self.num_questions = None
         self.tools = []
+        self.create_tools()
+        self.create_agent()
 
     @staticmethod
     def write_to_pdf(text_content):
@@ -137,8 +139,7 @@ class IpQuizAgent(GenericAgent):
                                                                  handle_parsing_errors=True)
 
     def invoke_agent(self, query, thread_id='1234', documents=None):
-        self.create_tools()
-        self.create_agent()
+
         self.num_questions = self.identify_num_questions(query=query)
         self.difficulty_level = self.identify_difficulty_level(query=query)
         if documents:
