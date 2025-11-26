@@ -13,6 +13,7 @@ from app.services.service_interface import GenericAgent
 from app.models.schemas import Quiz, NumQuestions, DifficultyLevel
 from app.core.constants import QUIZ_AGENT_PROMPT, NUM_QUESTIONS_IDENTIFIER_PROMPT, DIFFICULTY_LEVEL_IDENTIFIER_PROMPT, \
     GENERATE_QUIZ_PROMPT
+from app.utils.utility import format_docs
 
 warnings.filterwarnings("ignore")
 load_dotenv()
@@ -144,7 +145,7 @@ class IpQuizAgent(GenericAgent):
         self.difficulty_level = self.identify_difficulty_level(query=query)
         if documents:
             response = self.agent_executor.invoke(
-                {"input": query, "docs": documents, "num_questions": self.num_questions,
+                {"input": query, "docs": format_docs(documents), "num_questions": self.num_questions,
                  "difficulty_level": self.difficulty_level, "thread_id": thread_id})
         else:
             response = self.agent_executor.invoke({"input": query, "num_questions": self.num_questions,

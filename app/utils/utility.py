@@ -18,5 +18,9 @@ def get_interim_retrievers(ip_embedding, target_collections=["ip_laws", "ip_laws
         )
 
 
+def format_docs(documents):
+    return "/n".join(documents)
+
+
 def format_docs(docs):
     return "".join(doc.page_content for doc in docs)
